@@ -135,8 +135,8 @@ app.get('/api/categories', (req, res) => {
   }
 });
 
-// SPA fallback - serve index.html for all other routes
-app.get('*', (req, res) => {
+// SPA fallback - Express 5 requires named wildcard params
+app.get('/{*any}', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 

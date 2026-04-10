@@ -98,7 +98,7 @@ app.get('/api/categories', (req, res) => {
 });
 
 // SPA fallback
-app.get('*', (req, res) => {
+app.get('/{*any}', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
