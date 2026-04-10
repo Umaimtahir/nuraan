@@ -1,0 +1,24 @@
+{
+  "silverRate": 280,
+  "qualityMultipliers": {
+    "high": 1.5,
+    "medium": 1.25,
+    "low": 1
+  },
+  "makingCharges": {
+    "S-GR": 1500,
+    "S-LR": 1200,
+    "S-GC": 1800,
+    "S-LC": 1500,
+    "S-LS": 2500,
+    "S-MS": 3000,
+    "S-GS": 2800,
+    "S-GBR": 1600,
+    "S-LBR": 1400,
+    "S-ST": 800,
+    "S-BT": 600,
+    "S-CL": 1000,
+    "S-UT": 2000
+  },
+  "lastUpdated": "2026-04-07T18:32:04.919Z"
+}
