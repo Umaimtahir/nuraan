@@ -872,7 +872,7 @@ function renderAdminPage(container) {
     <div class="admin-page">
       <div class="admin-header">
         <h1>Admin Panel</h1>
-        <p style="color:#999;margin-top:8px;font-size:13px;">Manage silver rates, quality multipliers, and making charges</p>
+        <p style="color:#999;margin-top:8px;font-size:13px;">Manage silver rates, quality multipliers, making charges, and products</p>
       </div>
 
       <div id="admin-login-section" class="admin-login">
@@ -882,95 +882,240 @@ function renderAdminPage(container) {
       </div>
 
       <div id="admin-content" style="display:none;">
-        <!-- Silver Rate -->
-        <div class="admin-section">
-          <h3>Silver Rate Configuration</h3>
-          <div class="admin-row">
-            <label>Silver Rate (Rs/gram)</label>
-            <input type="number" id="admin-silver-rate" value="${state.config?.silverRate || 280}">
-          </div>
-          <div class="admin-row">
-            <label>High Quality Multiplier</label>
-            <input type="number" step="0.01" id="admin-mult-high" value="${state.config?.qualityMultipliers?.high || 1.5}">
-          </div>
-          <div class="admin-row">
-            <label>Medium Quality Multiplier</label>
-            <input type="number" step="0.01" id="admin-mult-medium" value="${state.config?.qualityMultipliers?.medium || 1.25}">
-          </div>
-          <div class="admin-row">
-            <label>Low Quality Multiplier</label>
-            <input type="number" step="0.01" id="admin-mult-low" value="${state.config?.qualityMultipliers?.low || 1.0}">
-          </div>
-          <button class="btn btn-primary" id="admin-save-config"><span>Save Configuration</span></button>
-          <div id="admin-config-status"></div>
+
+        <!-- Admin Tab Navigation -->
+        <div class="admin-tabs">
+          <button class="admin-tab active" data-tab="config">Configuration</button>
+          <button class="admin-tab" data-tab="products">Products</button>
+          <button class="admin-tab" data-tab="add-product">+ Add Product</button>
         </div>
 
-        <!-- Making Charges -->
-        <div class="admin-section">
-          <h3>Making Charges by Category</h3>
-          <table class="admin-products-table">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th>Code</th>
-                <th>Making Charge (Rs)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${CATEGORIES.map(cat => `
-                <tr>
-                  <td>${cat.name}</td>
-                  <td>${cat.code}</td>
-                  <td><input type="number" class="admin-making-charge" data-code="${cat.code}" value="${state.config?.makingCharges?.[cat.code] || 1000}"></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <div style="margin-top:16px;">
-            <button class="btn btn-primary" id="admin-save-making"><span>Save Making Charges</span></button>
+        <!-- ===== CONFIG TAB ===== -->
+        <div class="admin-tab-content active" id="admin-tab-config">
+          <!-- Silver Rate -->
+          <div class="admin-section">
+            <h3>Silver Rate Configuration</h3>
+            <div class="admin-row">
+              <label>Silver Rate (Rs/gram)</label>
+              <input type="number" id="admin-silver-rate" value="${state.config?.silverRate || 280}">
+            </div>
+            <div class="admin-row">
+              <label>High Quality Multiplier</label>
+              <input type="number" step="0.01" id="admin-mult-high" value="${state.config?.qualityMultipliers?.high || 1.5}">
+            </div>
+            <div class="admin-row">
+              <label>Medium Quality Multiplier</label>
+              <input type="number" step="0.01" id="admin-mult-medium" value="${state.config?.qualityMultipliers?.medium || 1.25}">
+            </div>
+            <div class="admin-row">
+              <label>Low Quality Multiplier</label>
+              <input type="number" step="0.01" id="admin-mult-low" value="${state.config?.qualityMultipliers?.low || 1.0}">
+            </div>
+            <button class="btn btn-primary" id="admin-save-config"><span>Save Configuration</span></button>
+            <div id="admin-config-status"></div>
           </div>
-          <div id="admin-making-status"></div>
+
+          <!-- Making Charges -->
+          <div class="admin-section">
+            <h3>Making Charges by Category</h3>
+            <table class="admin-products-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Code</th>
+                  <th>Making Charge (Rs)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${CATEGORIES.map(cat => `
+                  <tr>
+                    <td>${cat.name}</td>
+                    <td>${cat.code}</td>
+                    <td><input type="number" class="admin-making-charge" data-code="${cat.code}" value="${state.config?.makingCharges?.[cat.code] || 1000}"></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <div style="margin-top:16px;">
+              <button class="btn btn-primary" id="admin-save-making"><span>Save Making Charges</span></button>
+            </div>
+            <div id="admin-making-status"></div>
+          </div>
         </div>
 
-        <!-- Products Table -->
-        <div class="admin-section">
-          <h3>Product Weights</h3>
-          <table class="admin-products-table">
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Weight (g)</th>
-                <th>Low Price</th>
-                <th>Med Price</th>
-                <th>High Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${state.products.map(p => `
-                <tr>
-                  <td>${p.sku}</td>
-                  <td>${p.name}</td>
-                  <td>${p.category}</td>
-                  <td><input type="number" class="admin-product-weight" data-sku="${p.sku}" value="${p.weight}"></td>
-                  <td>${formatPrice(getProductPrice(p, 'low'))}</td>
-                  <td>${formatPrice(getProductPrice(p, 'medium'))}</td>
-                  <td>${formatPrice(getProductPrice(p, 'high'))}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <div style="margin-top:16px;">
-            <button class="btn btn-primary" id="admin-save-products"><span>Save Product Weights</span></button>
+        <!-- ===== PRODUCTS TAB ===== -->
+        <div class="admin-tab-content" id="admin-tab-products">
+          <div class="admin-section">
+            <h3>All Products — Manage Inventory</h3>
+            <p style="color:#999;font-size:12px;margin-bottom:20px;">Edit weights inline or delete products from your catalogue.</p>
+            <div class="admin-table-wrap">
+              <table class="admin-products-table">
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Weight (g)</th>
+                    <th>Low Price</th>
+                    <th>Med Price</th>
+                    <th>High Price</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${state.products.map(p => `
+                    <tr id="product-row-${p.sku}">
+                      <td><span class="admin-sku-badge">${p.sku}</span></td>
+                      <td>${p.name}</td>
+                      <td>${p.category}</td>
+                      <td><input type="number" class="admin-product-weight" data-sku="${p.sku}" value="${p.weight}"></td>
+                      <td>${formatPrice(getProductPrice(p, 'low'))}</td>
+                      <td>${formatPrice(getProductPrice(p, 'medium'))}</td>
+                      <td>${formatPrice(getProductPrice(p, 'high'))}</td>
+                      <td>
+                        <button class="admin-delete-btn" data-sku="${p.sku}" data-name="${p.name}" title="Delete ${p.name}">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+            <div style="margin-top:16px;">
+              <button class="btn btn-primary" id="admin-save-products"><span>Save Product Weights</span></button>
+            </div>
+            <div id="admin-products-status"></div>
           </div>
-          <div id="admin-products-status"></div>
+        </div>
+
+        <!-- ===== ADD PRODUCT TAB ===== -->
+        <div class="admin-tab-content" id="admin-tab-add-product">
+          <div class="admin-section">
+            <h3>Add New Product</h3>
+            <p style="color:#999;font-size:12px;margin-bottom:24px;">Fill in all product details below to add to the catalogue.</p>
+
+            <div class="admin-form-grid">
+              <!-- Row 1 -->
+              <div class="admin-form-group">
+                <label class="admin-form-label">SKU <span class="required">*</span></label>
+                <input type="text" id="add-sku" class="admin-form-input" placeholder="e.g. S-GR-0006">
+                <span class="admin-form-hint">Format: S-XX-0000 (must be unique)</span>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Product Name <span class="required">*</span></label>
+                <input type="text" id="add-name" class="admin-form-input" placeholder="e.g. Royal Monarch">
+              </div>
+
+              <!-- Row 2 -->
+              <div class="admin-form-group">
+                <label class="admin-form-label">Category <span class="required">*</span></label>
+                <select id="add-category" class="admin-form-input">
+                  <option value="">— Select Category —</option>
+                  ${CATEGORIES.map(cat => `<option value="${cat.name}" data-code="${cat.code}">${cat.name} (${cat.code})</option>`).join('')}
+                </select>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Sub Type</label>
+                <input type="text" id="add-subtype" class="admin-form-input" placeholder="e.g. Turkish, Irani (optional)">
+              </div>
+
+              <!-- Row 3 -->
+              <div class="admin-form-group">
+                <label class="admin-form-label">Weight (grams) <span class="required">*</span></label>
+                <input type="number" id="add-weight" class="admin-form-input" placeholder="e.g. 15" min="1">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Featured Product</label>
+                <select id="add-featured" class="admin-form-input">
+                  <option value="false">No</option>
+                  <option value="true">Yes — Show on homepage</option>
+                </select>
+              </div>
+
+              <!-- Full Width Description -->
+              <div class="admin-form-group full-width">
+                <label class="admin-form-label">Description</label>
+                <textarea id="add-description" class="admin-form-input admin-textarea" rows="3" placeholder="Describe the product..."></textarea>
+              </div>
+
+              <!-- Row 4 -->
+              <div class="admin-form-group">
+                <label class="admin-form-label">Stones</label>
+                <div class="admin-checkbox-group">
+                  <label class="admin-checkbox-label"><input type="checkbox" value="moissanite" class="add-stone-check"> Moissanite</label>
+                  <label class="admin-checkbox-label"><input type="checkbox" value="zircon" class="add-stone-check"> Zircon</label>
+                </div>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Options</label>
+                <div class="admin-checkbox-group">
+                  <label class="admin-checkbox-label"><input type="checkbox" id="add-rhodium" checked> Rhodium Plating</label>
+                  <label class="admin-checkbox-label"><input type="checkbox" id="add-engravable" checked> Engravable</label>
+                </div>
+              </div>
+
+              <!-- Row 5 -->
+              <div class="admin-form-group">
+                <label class="admin-form-label">Sizes</label>
+                <input type="text" id="add-sizes" class="admin-form-input" placeholder="e.g. 18mm, 19mm, 20mm, 21mm">
+                <span class="admin-form-hint">Comma-separated values</span>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Top Widths</label>
+                <input type="text" id="add-topwidths" class="admin-form-input" placeholder="e.g. 5mm, 6mm, 8mm">
+                <span class="admin-form-hint">Comma-separated (for rings)</span>
+              </div>
+
+              <!-- Row 6: Image Upload -->
+              <div class="admin-form-group full-width">
+                <label class="admin-form-label">Product Images</label>
+                <div class="admin-upload-zone" id="upload-zone">
+                  <input type="file" id="upload-input" multiple accept="image/jpeg,image/png,image/webp,image/gif" style="display:none;">
+                  <div class="upload-zone-content" id="upload-zone-content">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    <p class="upload-zone-title">Drag & drop images here</p>
+                    <p class="upload-zone-subtitle">or click to browse • JPG, PNG, WebP • Max 10MB each</p>
+                  </div>
+                </div>
+                <div class="upload-previews" id="upload-previews"></div>
+                <div id="upload-status"></div>
+              </div>
+            </div>
+
+            <!-- Preview of SKU auto-generated -->
+            <div class="admin-add-preview" id="add-product-preview" style="display:none;">
+              <h4>Product Preview</h4>
+              <div id="add-preview-content"></div>
+            </div>
+
+            <div style="margin-top:24px;display:flex;gap:12px;">
+              <button class="btn btn-primary" id="admin-add-product-btn"><span>Add Product</span></button>
+              <button class="btn" id="admin-preview-product-btn" style="border-color:var(--accent);"><span>Preview</span></button>
+            </div>
+            <div id="admin-add-status"></div>
+          </div>
         </div>
 
         <p style="text-align:center;color:#999;font-size:12px;margin-top:20px;">Last updated: ${state.config?.lastUpdated ? new Date(state.config.lastUpdated).toLocaleString() : 'N/A'}</p>
       </div>
     </div>
   `;
+
+  // ---- Admin Tab Navigation ----
+  $$('.admin-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      $$('.admin-tab').forEach(t => t.classList.remove('active'));
+      $$('.admin-tab-content').forEach(tc => tc.classList.remove('active'));
+      tab.classList.add('active');
+      const target = document.getElementById('admin-tab-' + tab.dataset.tab);
+      if (target) target.classList.add('active');
+    });
+  });
 
   // Admin login
   const loginBtn = $('#admin-login-btn');
@@ -983,6 +1128,9 @@ function renderAdminPage(container) {
       } else {
         alert('Incorrect password');
       }
+    });
+    pwInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') loginBtn.click();
     });
   }
 
@@ -1008,7 +1156,6 @@ function renderAdminPage(container) {
         state.config = data;
         await fetchProducts();
         showStatus('admin-config-status', 'Configuration saved successfully!', 'success');
-        // Refresh admin page to show new prices
         setTimeout(() => renderAdminPage(container), 1000);
       } catch (e) {
         showStatus('admin-config-status', 'Failed to save: ' + e.message, 'error');
@@ -1064,6 +1211,368 @@ function renderAdminPage(container) {
         showStatus('admin-products-status', 'Failed: ' + e.message, 'error');
       }
     });
+  }
+
+  // ---- Delete Product ----
+  $$('.admin-delete-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const sku = btn.dataset.sku;
+      const name = btn.dataset.name;
+      const row = document.getElementById('product-row-' + sku);
+      if (!row) return;
+
+      // Check if confirmation already showing
+      if (row.querySelector('.delete-confirm-bar')) return;
+
+      // Create inline confirmation bar
+      const confirmBar = document.createElement('tr');
+      confirmBar.className = 'delete-confirm-bar';
+      confirmBar.innerHTML = `
+        <td colspan="8" style="background:rgba(239,83,80,0.08);padding:12px 16px;border-bottom:2px solid var(--color-error);">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <span style="font-size:13px;color:var(--color-error);font-weight:600;letter-spacing:0.5px;">
+              Delete "${name}" (${sku})? This cannot be undone.
+            </span>
+            <div style="display:flex;gap:8px;">
+              <button class="delete-confirm-yes" style="padding:8px 20px;background:var(--color-error);color:#fff;border:none;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-family:var(--font-body);">YES, DELETE</button>
+              <button class="delete-confirm-no" style="padding:8px 20px;background:transparent;color:var(--text-secondary);border:1px solid var(--border-color);font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-family:var(--font-body);">CANCEL</button>
+            </div>
+          </div>
+        </td>
+      `;
+
+      // Insert after the product row
+      row.after(confirmBar);
+      row.style.background = 'rgba(239,83,80,0.04)';
+
+      // Cancel
+      confirmBar.querySelector('.delete-confirm-no').addEventListener('click', () => {
+        confirmBar.remove();
+        row.style.background = '';
+      });
+
+      // Confirm delete
+      confirmBar.querySelector('.delete-confirm-yes').addEventListener('click', async () => {
+        try {
+          confirmBar.querySelector('.delete-confirm-yes').textContent = 'DELETING...';
+          const res = await fetch(API_BASE + '/api/products/' + sku, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-admin-password': 'nuraan2026'
+            }
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Delete failed');
+          }
+          await fetchProducts();
+          showStatus('admin-products-status', `"${name}" (${sku}) deleted successfully!`, 'success');
+          // Animate out
+          confirmBar.remove();
+          row.style.transition = 'opacity 0.4s, transform 0.4s';
+          row.style.opacity = '0';
+          row.style.transform = 'translateX(20px)';
+          setTimeout(() => row.remove(), 400);
+        } catch (e) {
+          showStatus('admin-products-status', 'Delete failed: ' + e.message, 'error');
+          confirmBar.remove();
+          row.style.background = '';
+        }
+      });
+    });
+  });
+
+  // ---- Auto-fill SKU when category is selected ----
+  const catSelect = $('#add-category');
+  if (catSelect) {
+    catSelect.addEventListener('change', () => {
+      const selected = catSelect.options[catSelect.selectedIndex];
+      const code = selected?.dataset?.code;
+      if (code) {
+        // Find next available SKU number
+        const existing = state.products.filter(p => p.sku.startsWith(code));
+        const maxNum = existing.reduce((max, p) => {
+          const num = parseInt(p.sku.split('-').pop());
+          return num > max ? num : max;
+        }, 0);
+        const nextNum = String(maxNum + 1).padStart(4, '0');
+        const skuInput = $('#add-sku');
+        if (skuInput && !skuInput.value) {
+          skuInput.value = `${code}-${nextNum}`;
+        }
+      }
+    });
+  }
+
+  // ---- Preview Product ----
+  const previewBtn = $('#admin-preview-product-btn');
+  if (previewBtn) {
+    previewBtn.addEventListener('click', () => {
+      const productData = gatherAddProductData();
+      const previewDiv = $('#add-product-preview');
+      const previewContent = $('#add-preview-content');
+      if (!productData.sku || !productData.name || !productData.category) {
+        showStatus('admin-add-status', 'Please fill SKU, Name, and Category to preview.', 'error');
+        return;
+      }
+      previewDiv.style.display = 'block';
+      previewContent.innerHTML = `
+        <div class="admin-preview-card">
+          <div class="admin-preview-row"><strong>SKU:</strong> ${productData.sku}</div>
+          <div class="admin-preview-row"><strong>Name:</strong> ${productData.name}</div>
+          <div class="admin-preview-row"><strong>Category:</strong> ${productData.category}</div>
+          ${productData.subType ? `<div class="admin-preview-row"><strong>Sub Type:</strong> ${productData.subType}</div>` : ''}
+          <div class="admin-preview-row"><strong>Weight:</strong> ${productData.weight}g</div>
+          <div class="admin-preview-row"><strong>Stones:</strong> ${productData.stones.length ? productData.stones.join(', ') : 'None'}</div>
+          <div class="admin-preview-row"><strong>Rhodium:</strong> ${productData.rhodiumOption ? 'Yes' : 'No'}</div>
+          <div class="admin-preview-row"><strong>Engravable:</strong> ${productData.engravable ? 'Yes' : 'No'}</div>
+          <div class="admin-preview-row"><strong>Sizes:</strong> ${productData.sizes.length ? productData.sizes.join(', ') : 'None'}</div>
+          ${productData.topWidths.length ? `<div class="admin-preview-row"><strong>Top Widths:</strong> ${productData.topWidths.join(', ')}</div>` : ''}
+          <div class="admin-preview-row full-width"><strong>Images:</strong> ${productData.images.length ? productData.images.length + ' uploaded' : 'None'}</div>
+          ${productData.images.length ? `<div class="admin-preview-row full-width"><div class="admin-preview-thumbs">${productData.images.map(img => `<img src="/assets/products/${img}" alt="" class="admin-preview-thumb">`).join('')}</div></div>` : ''}
+          <div class="admin-preview-row"><strong>Featured:</strong> ${productData.featured ? 'Yes' : 'No'}</div>
+          ${productData.description ? `<div class="admin-preview-row"><strong>Description:</strong> ${productData.description}</div>` : ''}
+        </div>
+      `;
+    });
+  }
+
+  // ---- Image Upload ----
+  initImageUpload();
+
+  // ---- Add Product ----
+  const addBtn = $('#admin-add-product-btn');
+  if (addBtn) {
+    addBtn.addEventListener('click', async () => {
+      const productData = gatherAddProductData();
+
+      // Validate required fields
+      if (!productData.sku) { showStatus('admin-add-status', 'SKU is required.', 'error'); return; }
+      if (!productData.name) { showStatus('admin-add-status', 'Product name is required.', 'error'); return; }
+      if (!productData.category) { showStatus('admin-add-status', 'Category is required.', 'error'); return; }
+      if (!productData.weight || productData.weight <= 0) { showStatus('admin-add-status', 'Weight must be greater than 0.', 'error'); return; }
+
+      try {
+        addBtn.querySelector('span').textContent = 'Adding...';
+        addBtn.disabled = true;
+
+        // Step 1: Upload pending images first
+        if (pendingUploadFiles.length > 0) {
+          showStatus('admin-add-status', 'Uploading images...', 'success');
+          const formData = new FormData();
+          formData.append('password', 'nuraan2026');
+          pendingUploadFiles.forEach(f => formData.append('images', f));
+
+          const uploadRes = await fetch(API_BASE + '/api/upload', {
+            method: 'POST',
+            body: formData
+          });
+          if (!uploadRes.ok) {
+            const err = await uploadRes.json();
+            throw new Error(err.error || 'Image upload failed');
+          }
+          const uploadData = await uploadRes.json();
+          uploadedImageFilenames.push(...uploadData.filenames);
+        }
+
+        // Step 2: Create the product with the uploaded filenames
+        productData.images = [...uploadedImageFilenames];
+
+        const res = await fetch(API_BASE + '/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: 'nuraan2026', ...productData })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to add product');
+        }
+
+        await fetchProducts();
+        showStatus('admin-add-status', `"${productData.name}" (${productData.sku}) added successfully!`, 'success');
+
+        // Clear form
+        clearAddProductForm();
+
+        // Refresh admin page after a short delay
+        setTimeout(() => renderAdminPage(container), 1500);
+      } catch (e) {
+        showStatus('admin-add-status', e.message, 'error');
+      } finally {
+        addBtn.querySelector('span').textContent = 'Add Product';
+        addBtn.disabled = false;
+      }
+    });
+  }
+}
+
+// --- Image Upload State ---
+let pendingUploadFiles = [];       // File objects waiting to be uploaded
+let uploadedImageFilenames = [];   // Filenames already on server
+
+function gatherAddProductData() {
+  const stones = [];
+  $$('.add-stone-check').forEach(cb => { if (cb.checked) stones.push(cb.value); });
+
+  const sizesRaw = ($('#add-sizes')?.value || '').trim();
+  const sizes = sizesRaw ? sizesRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+  const topWidthsRaw = ($('#add-topwidths')?.value || '').trim();
+  const topWidths = topWidthsRaw ? topWidthsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+  return {
+    sku: ($('#add-sku')?.value || '').trim().toUpperCase(),
+    name: ($('#add-name')?.value || '').trim(),
+    category: ($('#add-category')?.value || ''),
+    subType: ($('#add-subtype')?.value || '').trim(),
+    weight: parseFloat($('#add-weight')?.value || 0),
+    description: ($('#add-description')?.value || '').trim(),
+    stones,
+    rhodiumOption: $('#add-rhodium')?.checked ?? true,
+    engravable: $('#add-engravable')?.checked ?? true,
+    sizes,
+    topWidths,
+    images: [...uploadedImageFilenames],
+    featured: $('#add-featured')?.value === 'true',
+  };
+}
+
+function clearAddProductForm() {
+  const fields = ['#add-sku', '#add-name', '#add-subtype', '#add-weight', '#add-description', '#add-sizes', '#add-topwidths'];
+  fields.forEach(sel => { const el = $(sel); if (el) el.value = ''; });
+  const catSel = $('#add-category');
+  if (catSel) catSel.selectedIndex = 0;
+  const featSel = $('#add-featured');
+  if (featSel) featSel.selectedIndex = 0;
+  $$('.add-stone-check').forEach(cb => cb.checked = false);
+  const rhodium = $('#add-rhodium');
+  if (rhodium) rhodium.checked = true;
+  const engravable = $('#add-engravable');
+  if (engravable) engravable.checked = true;
+  const preview = $('#add-product-preview');
+  if (preview) preview.style.display = 'none';
+  // Reset image uploads
+  pendingUploadFiles = [];
+  uploadedImageFilenames = [];
+  const uploadPreviews = $('#upload-previews');
+  if (uploadPreviews) uploadPreviews.innerHTML = '';
+  const uploadInput = $('#upload-input');
+  if (uploadInput) uploadInput.value = '';
+}
+
+// --- Image Upload Logic ---
+function initImageUpload() {
+  const zone = $('#upload-zone');
+  const input = $('#upload-input');
+  const previewsContainer = $('#upload-previews');
+  if (!zone || !input) return;
+
+  // Click to browse
+  zone.addEventListener('click', (e) => {
+    if (e.target === input) return;
+    input.click();
+  });
+
+  // File selected via browse
+  input.addEventListener('change', () => {
+    if (input.files.length > 0) {
+      handleFiles([...input.files]);
+    }
+  });
+
+  // Drag & drop
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    zone.classList.add('drag-over');
+  });
+  zone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+  });
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+    if (files.length > 0) handleFiles(files);
+  });
+
+  function handleFiles(files) {
+    files.forEach(file => {
+      // Check size
+      if (file.size > 10 * 1024 * 1024) {
+        showStatus('upload-status', `"${file.name}" exceeds 10MB limit.`, 'error');
+        return;
+      }
+      // Prevent duplicates
+      if (pendingUploadFiles.some(f => f.name === file.name && f.size === file.size)) return;
+
+      pendingUploadFiles.push(file);
+      addImagePreview(file, pendingUploadFiles.length - 1);
+    });
+    updateUploadZoneLabel();
+  }
+
+  function addImagePreview(file, idx) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const div = document.createElement('div');
+      div.className = 'upload-preview-item';
+      div.dataset.idx = idx;
+      div.innerHTML = `
+        <img src="${e.target.result}" alt="${file.name}" class="upload-preview-img">
+        <div class="upload-preview-info">
+          <span class="upload-preview-name">${file.name}</span>
+          <span class="upload-preview-size">${(file.size / 1024).toFixed(0)} KB</span>
+        </div>
+        <button class="upload-preview-remove" data-idx="${idx}" title="Remove">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      `;
+      div.querySelector('.upload-preview-remove').addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        removeImage(idx);
+      });
+      previewsContainer.appendChild(div);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeImage(idx) {
+    pendingUploadFiles[idx] = null; // Mark as removed
+    const el = previewsContainer.querySelector(`[data-idx="${idx}"]`);
+    if (el) {
+      el.style.transition = 'opacity 0.3s, transform 0.3s';
+      el.style.opacity = '0';
+      el.style.transform = 'scale(0.8)';
+      setTimeout(() => el.remove(), 300);
+    }
+    // Clean nulls
+    pendingUploadFiles = pendingUploadFiles.filter(Boolean);
+    // Re-index remaining previews
+    setTimeout(() => {
+      previewsContainer.querySelectorAll('.upload-preview-item').forEach((item, i) => {
+        item.dataset.idx = i;
+        item.querySelector('.upload-preview-remove').dataset.idx = i;
+      });
+    }, 350);
+    updateUploadZoneLabel();
+  }
+
+  function updateUploadZoneLabel() {
+    const content = $('#upload-zone-content');
+    const count = pendingUploadFiles.filter(Boolean).length + uploadedImageFilenames.length;
+    if (count > 0) {
+      content.querySelector('.upload-zone-title').textContent = `${count} image${count > 1 ? 's' : ''} selected`;
+      content.querySelector('.upload-zone-subtitle').textContent = 'Click or drag to add more';
+    } else {
+      content.querySelector('.upload-zone-title').textContent = 'Drag & drop images here';
+      content.querySelector('.upload-zone-subtitle').textContent = 'or click to browse • JPG, PNG, WebP • Max 10MB each';
+    }
   }
 }
 

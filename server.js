@@ -2,9 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -83,6 +84,106 @@ app.put('/api/products/:sku', (req, res) => {
   res.json(products[idx]);
 });
 
+// --- Add Product API ---
+app.post('/api/products', (req, res) => {
+  const { password, ...productData } = req.body;
+  if (password !== 'nuraan2026') {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (!productData.sku || !productData.name || !productData.category || !productData.weight) {
+    return res.status(400).json({ error: 'Missing required fields: sku, name, category, weight' });
+  }
+  const products = readJSON(PRODUCTS_PATH);
+  // Check for duplicate SKU
+  if (products.find(p => p.sku === productData.sku)) {
+    return res.status(409).json({ error: 'A product with this SKU already exists' });
+  }
+  // Ensure proper defaults
+  const newProduct = {
+    sku: productData.sku,
+    name: productData.name,
+    category: productData.category,
+    subType: productData.subType || '',
+    weight: parseFloat(productData.weight),
+    description: productData.description || '',
+    stones: productData.stones || [],
+    rhodiumOption: productData.rhodiumOption !== undefined ? productData.rhodiumOption : true,
+    sizes: productData.sizes || [],
+    topWidths: productData.topWidths || [],
+    engravable: productData.engravable !== undefined ? productData.engravable : true,
+    images: productData.images || [],
+    featured: productData.featured || false,
+  };
+  products.push(newProduct);
+  writeJSON(PRODUCTS_PATH, products);
+  res.status(201).json(newProduct);
+});
+
+// --- Delete Product API ---
+app.delete('/api/products/:sku', (req, res) => {
+  const password = req.headers['x-admin-password'] || (req.body && req.body.password);
+  if (password !== 'nuraan2026') {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const products = readJSON(PRODUCTS_PATH);
+  const idx = products.findIndex(p => p.sku === req.params.sku);
+  if (idx === -1) return res.status(404).json({ error: 'Product not found' });
+  const deleted = products.splice(idx, 1)[0];
+  writeJSON(PRODUCTS_PATH, products);
+  res.json({ message: 'Product deleted', product: deleted });
+});
+
+// --- Image Upload API ---
+const UPLOAD_DIR = path.join(__dirname, 'public', 'assets', 'products');
+// Ensure upload directory exists
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    // Clean the original filename and add timestamp to avoid collisions
+    const ext = path.extname(file.originalname).toLowerCase();
+    const baseName = path.basename(file.originalname, ext)
+      .replace(/[^a-zA-Z0-9-_]/g, '-')
+      .replace(/-+/g, '-')
+      .toLowerCase();
+    const uniqueName = `${baseName}-${Date.now()}${ext}`;
+    cb(null, uniqueName);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB per file
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files (jpg, png, webp, gif) are allowed'));
+    }
+  }
+});
+
+app.post('/api/upload', upload.array('images', 10), (req, res) => {
+  // Password check via form field
+  if (req.body.password !== 'nuraan2026') {
+    // Delete any uploaded files if unauthorized
+    if (req.files) {
+      req.files.forEach(f => fs.unlinkSync(f.path));
+    }
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: 'No images uploaded' });
+  }
+  const filenames = req.files.map(f => f.filename);
+  res.json({ message: 'Images uploaded successfully', filenames });
+});
+
 // --- Categories API ---
 app.get('/api/categories', (req, res) => {
   const products = readJSON(PRODUCTS_PATH);
@@ -98,7 +199,7 @@ app.get('/api/categories', (req, res) => {
 });
 
 // SPA fallback
-app.get('*', (req, res) => {
+app.get('{*path}', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

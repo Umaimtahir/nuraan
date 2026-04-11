@@ -1,5 +1,5 @@
 {
-  "silverRate": 280,
+  "silverRate": 100,
   "qualityMultipliers": {
     "high": 1.5,
     "medium": 1.25,
@@ -20,5 +20,5 @@
     "S-CL": 1000,
     "S-UT": 2000
   },
-  "lastUpdated": "2026-04-07T18:32:04.919Z"
+  "lastUpdated": "2026-04-10T16:44:55.682Z"
 }
