@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
 
 const app = express();
 
@@ -115,6 +116,107 @@ app.put('/api/products/:sku', (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Failed to update product' });
   }
+});
+
+// --- Add Product API ---
+app.post('/api/products', (req, res) => {
+  try {
+    const { password, ...productData } = req.body;
+    if (password !== 'nuraan2026') {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (!productData.sku || !productData.name || !productData.category || !productData.weight) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    const products = readJSON(PRODUCTS_PATH);
+    if (products.find(p => p.sku === productData.sku)) {
+      return res.status(409).json({ error: 'SKU already exists' });
+    }
+    const newProduct = {
+      sku: productData.sku,
+      name: productData.name,
+      category: productData.category,
+      subType: productData.subType || '',
+      weight: parseFloat(productData.weight),
+      description: productData.description || '',
+      stones: productData.stones || [],
+      rhodiumOption: productData.rhodiumOption !== undefined ? productData.rhodiumOption : true,
+      sizes: productData.sizes || [],
+      topWidths: productData.topWidths || [],
+      engravable: productData.engravable !== undefined ? productData.engravable : true,
+      images: productData.images || [],
+      featured: productData.featured || false,
+    };
+    products.push(newProduct);
+    writeJSON(PRODUCTS_PATH, products);
+    res.status(201).json(newProduct);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to add product' });
+  }
+});
+
+// --- Delete Product API ---
+app.delete('/api/products/:sku', (req, res) => {
+  try {
+    const password = req.headers['x-admin-password'] || (req.body && req.body.password);
+    if (password !== 'nuraan2026') {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const products = readJSON(PRODUCTS_PATH);
+    const idx = products.findIndex(p => p.sku === req.params.sku);
+    if (idx === -1) return res.status(404).json({ error: 'Product not found' });
+    const deleted = products.splice(idx, 1)[0];
+    writeJSON(PRODUCTS_PATH, products);
+    res.json({ message: 'Product deleted', product: deleted });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete product' });
+  }
+});
+
+// --- Image Upload API ---
+// Vercel only allows writing to /tmp
+const UPLOAD_DIR = process.env.VERCEL ? '/tmp' : path.join(__dirname, '../public/assets/products');
+if (!process.env.VERCEL && !fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const baseName = path.basename(file.originalname, ext)
+      .replace(/[^a-zA-Z0-9-_]/g, '-')
+      .replace(/-+/g, '-')
+      .toLowerCase();
+    const uniqueName = `${baseName}-${Date.now()}${ext}`;
+    cb(null, uniqueName);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+});
+
+app.post('/api/upload', upload.array('images', 10), (req, res) => {
+  if (req.body.password !== 'nuraan2026') {
+    if (req.files) req.files.forEach(f => fs.unlinkSync(f.path));
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: 'No images uploaded' });
+  }
+  const filenames = req.files.map(f => f.filename);
+  res.json({ message: 'Images uploaded successfully', filenames });
 });
 
 // --- Categories API ---
