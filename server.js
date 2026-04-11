@@ -199,10 +199,16 @@ app.get('/api/categories', (req, res) => {
 });
 
 // SPA fallback
-app.get('{*path}', (req, res) => {
+app.get('/{*any}', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`NURAAN Server running at http://localhost:${PORT}`);
-});
+// Export for Vercel serverless functions
+module.exports = app;
+
+// Only listen locally, not on Vercel
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`NURAAN Server running at http://localhost:${PORT}`);
+  });
+}
